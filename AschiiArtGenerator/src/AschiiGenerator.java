@@ -15,6 +15,8 @@ import javax.swing.JOptionPane;
 
 public class AschiiGenerator {
 	
+	enum PictureDestination {Display, File, None};
+	
 	public static double sHeightToWidthRatio  ;
 	
 	PixelAnalyzer mPixelAnalyzer;
@@ -41,7 +43,7 @@ public class AschiiGenerator {
 	}
 
 
-	public String generateTextFromPicture( String aPicturePath, int aCols )
+	public String generateTextFromPicture( String aPicturePath, int aCols, PictureDestination aPictureDestination )
 	{
 		BufferedImage im = null;
 		try 
@@ -103,22 +105,63 @@ public class AschiiGenerator {
 			ret.append( System.lineSeparator() );		
 		}
 		
-		System.out.println(mPixelAnalyzer.getBuckets());
+		switch( aPictureDestination )
+		{
+		case Display:
+			// display result
+			BufferedImage lResultImage = new BufferedImage((int) (3000), (int)( 3000), BufferedImage.TYPE_INT_RGB);
+			Graphics lResultGraphics = lResultImage.createGraphics();
+			
+			lResultGraphics.setColor(Color.white);
+			lResultGraphics.fillRect(0, 0, lResultImage.getWidth(), lResultImage.getHeight());
+			
+			lResultGraphics.setFont( mFont );
+			lResultGraphics.setColor(Color.black);
+			drawString(lResultGraphics, ret.toString(), 0, 0);
+			
+			//lResultGraphics.drawString(ret.toString(), lResultImage.getWidth() / 2, lResultImage.getHeight() / 2);
+	        JLabel label = new JLabel(new ImageIcon(lResultImage));  
+	        JOptionPane.showMessageDialog(null, label);
+	        
+			break;
+		case File:
+			BufferedImage lResultImage1 = new BufferedImage((int) (3000), (int)( 3000), BufferedImage.TYPE_INT_RGB);
+			Graphics lResultGraphics1 = lResultImage1.createGraphics();
+			
+	        // store that font width and height
+	        FontMetrics bigFontMetrics = lResultGraphics1.getFontMetrics(mFont);
+
+			double width = bigFontMetrics.stringWidth("oooo") / 4 * lCols;
+			double height = bigFontMetrics.getHeight() * lRows;
+	        
+	        
+	        
+	        
+		    // display result
+			BufferedImage lSaveResultImage = new BufferedImage((int)width, (int)height, BufferedImage.TYPE_INT_RGB);
+			Graphics lSaveResultGraphics = lSaveResultImage.createGraphics();
+		 	
+			lSaveResultGraphics.setColor(Color.white);
+			lSaveResultGraphics.fillRect(0, 0, lSaveResultImage.getWidth(), lSaveResultImage.getHeight());
+			
+			lSaveResultGraphics.setFont( mFont );
+			lSaveResultGraphics.setColor(Color.black);
+			drawString(lSaveResultGraphics, ret.toString(), 0, 0);
+			
+			try {
+				ImageIO.write(lSaveResultImage, "PNG", new File(aPicturePath + "_toASCHII.png"));
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			break;
+		case None:
+			break;
+		default:
+			break;
 		
-		// display result
-		BufferedImage lResultImage = new BufferedImage((int) (3000), (int)( 3000), BufferedImage.TYPE_INT_RGB);
-		Graphics lResultGraphics = lResultImage.createGraphics();
+		}
 		
-		lResultGraphics.setColor(Color.white);
-		lResultGraphics.fillRect(0, 0, lResultImage.getWidth(), lResultImage.getHeight());
-		
-		lResultGraphics.setFont( mFont );
-		lResultGraphics.setColor(Color.black);
-		drawString(lResultGraphics, ret.toString(), 0, 0);
-		
-		//lResultGraphics.drawString(ret.toString(), lResultImage.getWidth() / 2, lResultImage.getHeight() / 2);
-        JLabel label = new JLabel(new ImageIcon(lResultImage));  
-        JOptionPane.showMessageDialog(null, label);  
         
         
         
