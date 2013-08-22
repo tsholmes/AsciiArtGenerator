@@ -2,15 +2,20 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
-import java.awt.font.LineMetrics;
 import java.awt.image.BufferedImage;
+import java.awt.image.Raster;
 import java.io.File;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.stream.FileImageOutputStream;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageOutputStream;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 
 
 public class AschiiGenerator {
@@ -39,24 +44,13 @@ public class AschiiGenerator {
 		
 		sHeightToWidthRatio = height / width;
 		
-		
 	}
 
 
-	public String generateTextFromPicture( String aPicturePath, int aCols, PictureDestination aPictureDestination )
+	public String[] generateTextFromPicture( BufferedImage im, int aCols )
 	{
-		BufferedImage im = null;
-		try 
-		{
-			im = ImageIO.read( new File( aPicturePath ) );
-			
-		      JLabel label = new JLabel(new ImageIcon(im));  
-		      //JOptionPane.showMessageDialog(null, label);  
-		} 
-		catch (IOException e) 
-		{
-			e.printStackTrace();
-		}
+		Raster data = im.getData();
+		
 		StringBuffer ret = new StringBuffer("");
 		
 		double xresolution = im.getWidth() / (double)aCols;
@@ -105,72 +99,146 @@ public class AschiiGenerator {
 			ret.append( System.lineSeparator() );		
 		}
 		
-		switch( aPictureDestination )
-		{
-		case Display:
-			// display result
-			BufferedImage lResultImage = new BufferedImage((int) (3000), (int)( 3000), BufferedImage.TYPE_INT_RGB);
-			Graphics lResultGraphics = lResultImage.createGraphics();
-			
-			lResultGraphics.setColor(Color.white);
-			lResultGraphics.fillRect(0, 0, lResultImage.getWidth(), lResultImage.getHeight());
-			
-			lResultGraphics.setFont( mFont );
-			lResultGraphics.setColor(Color.black);
-			drawString(lResultGraphics, ret.toString(), 0, 0);
-			
-			//lResultGraphics.drawString(ret.toString(), lResultImage.getWidth() / 2, lResultImage.getHeight() / 2);
-	        JLabel label = new JLabel(new ImageIcon(lResultImage));  
-	        JOptionPane.showMessageDialog(null, label);
-	        
-			break;
-		case File:
-			BufferedImage lResultImage1 = new BufferedImage((int) (3000), (int)( 3000), BufferedImage.TYPE_INT_RGB);
-			Graphics lResultGraphics1 = lResultImage1.createGraphics();
-			
-	        // store that font width and height
-	        FontMetrics bigFontMetrics = lResultGraphics1.getFontMetrics(mFont);
+		return ret.toString().split("\n");
+		
+	}
 
-			double width = bigFontMetrics.stringWidth("oooo") / 4 * lCols;
-			double height = bigFontMetrics.getHeight() * lRows;
-	        
-	        
-	        
-	        
-		    // display result
-			BufferedImage lSaveResultImage = new BufferedImage((int)width, (int)height, BufferedImage.TYPE_INT_RGB);
-			Graphics lSaveResultGraphics = lSaveResultImage.createGraphics();
-		 	
-			lSaveResultGraphics.setColor(Color.white);
-			lSaveResultGraphics.fillRect(0, 0, lSaveResultImage.getWidth(), lSaveResultImage.getHeight());
+	public void textImageFromPicture( String aPicturePath, int aCols )
+	{
+		BufferedImage im = null;
+		try 
+		{
+			im = ImageIO.read( new File( aPicturePath ) );
 			
-			lSaveResultGraphics.setFont( mFont );
-			lSaveResultGraphics.setColor(Color.black);
-			drawString(lSaveResultGraphics, ret.toString(), 0, 0);
-			
-			try {
-				ImageIO.write(lSaveResultImage, "PNG", new File(aPicturePath + "_toASCHII.png"));
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			break;
-		case None:
-			break;
-		default:
-			break;
-		
+		      JLabel label = new JLabel(new ImageIcon(im));  
+		      //JOptionPane.showMessageDialog(null, label);  
+		} 
+		catch (IOException e) 
+		{
+			e.printStackTrace();
 		}
+		BufferedImage lResult = textImageFromPicture( im, aCols);
 		
-        
-        
-        
-		return ret.toString();
+		try {
+			ImageIO.write(lResult, "PNG", new File(aPicturePath + "_toASCHII.png"));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 	}
 	
-	 private void drawString(Graphics g, String text, int x, int y) {
-	        for (String line : text.split("\n"))
-	            g.drawString(line, x, y += g.getFontMetrics().getHeight());
-	    }
+	public BufferedImage textImageFromPicture( BufferedImage im, int aCols )
+	{
+		String[] lText = generateTextFromPicture(im, aCols);		
+		
+		BufferedImage lResultImage1 = new BufferedImage((int) (3000), (int)( 3000), BufferedImage.TYPE_INT_RGB);
+		Graphics lResultGraphics1 = lResultImage1.createGraphics();
+		
+        // store that font width and height
+        FontMetrics bigFontMetrics = lResultGraphics1.getFontMetrics(mFont);
+
+		double width = bigFontMetrics.stringWidth("oooo") / 4 * aCols;
+		double height = bigFontMetrics.getHeight() * lText.length;
+        
+        
+        
+	    // display result
+		BufferedImage lSaveResultImage = new BufferedImage((int)width, (int)height, BufferedImage.TYPE_INT_RGB);
+		Graphics lSaveResultGraphics = lSaveResultImage.createGraphics();
+	 	
+		lSaveResultGraphics.setColor(Color.white);
+		lSaveResultGraphics.fillRect(0, 0, lSaveResultImage.getWidth(), lSaveResultImage.getHeight());
+		
+		lSaveResultGraphics.setFont( mFont );
+		lSaveResultGraphics.setColor(Color.black);
+		drawString(lSaveResultGraphics, lText, 0, 0);
+		
+		
+		return lSaveResultImage;
+	}
+	private void drawString(Graphics g, String text, int x, int y) 
+	{
+		drawString(g, text.split("\n"), x, y);
+	}
+	private void drawString(Graphics g, String[] text, int x, int y) 
+	{
+		for (String line : text )
+			g.drawString(line, x, y += g.getFontMetrics().getHeight());
+	}
+	 
+	 
+	 
+	 
+	public void saveTextGifFromGifFile( String aGifPath, int aCols )
+	{
+		try 
+		{
+			ImageReader reader = ImageIO.getImageReadersBySuffix("GIF").next();  
+			ImageInputStream in = ImageIO.createImageInputStream( new File( aGifPath) );
+			reader.setInput(in);  
+			
+			/*//determine framerate
+			javax.imageio.IIOImage frame = reader.readAll(0, null);
+		    
+		    IIOMetadata meta = frame.getMetadata();
+            IIOMetadataNode imgRootNode = null;
+		    try
+		    {
+                imgRootNode = (IIOMetadataNode) meta.getAsTree("javax_imageio_gif_image_1.0");
+            }
+		    catch(IllegalArgumentException e) 
+		    {
+		    	e.printStackTrace();
+            }
+		    IIOMetadataNode gce = (IIOMetadataNode)
+	                imgRootNode.getElementsByTagName("GraphicControlExtension").item(0);
+
+
+            int delay = Integer.parseInt(gce.getAttribute("delayTime"));*/
+            
+            
+			// create a new BufferedOutputStream with the last argument
+			ImageOutputStream output = new FileImageOutputStream(new File(aGifPath + "_toAscii.gif"));
+			
+			// create a gif sequence with the type of the first image, 1 second
+			// between frames, which loops continuously
+			GifSequenceWriter gifwriter = new GifSequenceWriter(output, BufferedImage.TYPE_INT_RGB,70, true);
+			
+			
+			System.out.println( reader.getNumImages(true) + "images in gif" );
+			BufferedImage image = reader.read(0);
+			Graphics g = image.getGraphics();
+			
+			g.setColor(Color.black);
+			
+			g.fillRect(0, 0, image.getWidth(), image.getHeight());
+			BufferedImage lastImage = image;
+		 
+			for (int i = 0, count = reader.getNumImages(true); i < count; i++)  
+			{  
+				
+			    BufferedImage nextimage = reader.read(i);
+			    System.out.println(nextimage.getWidth() + " , " + nextimage.getHeight());
+			    Graphics img = lastImage.getGraphics();
+			    img.drawImage(nextimage, 0, 0, nextimage.getWidth(), nextimage.getHeight(), null);
+			    
+			    image = textImageFromPicture(lastImage, aCols);
+			    gifwriter.writeToSequence(image);
+			    //ImageIO.write(image, "PNG", new File(aGifPath + "output" + i + ".png"));  
+			}   
+			
+			gifwriter.close();
+			output.close();
+ 
+		} 
+		catch (IOException e) 
+		{	 
+			e.printStackTrace();	
+		}
+		
+	} 
+	 
+	 
+	 
 }
